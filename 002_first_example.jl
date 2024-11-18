@@ -50,9 +50,9 @@ end
 
 using Optimization
 
-optf = OptimizationFunction(fnc, AutoForwardDiff())
+optf = OptimizationFunction(fnc, SecondOrder(AutoForwardDiff(),AutoForwardDiff()))
 optprob = OptimizationProblem(optf, p)
-optsol = solve(optprob, Optimization.LBFGS())
+optsol = solve(optprob, Optimization.Sophia())
 
 
 
@@ -61,5 +61,5 @@ sol_opt = solve(prob, Tsit5(), p = optsol.u)
 begin
     plot(sol_opt, labels = ["x*" "y*"], color = [1 2])
     scatter!(getindex.(data, 1), getindex.(data, 2), color = [1 2])
-    plot!(sol, labels = ["x" "y"], linestyle = :dash)
+    plot!(sol, labels = ["x" "y"], linestyle = :dash, color = [1 2])
 end
