@@ -24,3 +24,27 @@
 =# 
 
 
+#=
+
+    Demonstration of Julia's speed.
+
+=#
+
+
+function pairwise(x, fnc)
+
+    result = 1.0
+    for i in eachindex(x)
+        for j in 1:i-1
+            result += fnc(x[i], x[j])
+        end
+    end
+
+    return result
+end
+
+x = rand(10_000)
+fnc(x,y) = x^2/y
+
+@time pairwise(x, fnc)
+

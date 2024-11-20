@@ -1,4 +1,4 @@
-using DifferentialEquations, Plots
+using OrdinaryDiffEq, Plots
 
 # 1. Solving an ODE model with Julia 
 function lotka_volterra!(du, u, p, t)
