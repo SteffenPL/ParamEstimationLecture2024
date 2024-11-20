@@ -1,4 +1,4 @@
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEq, Plots, StaticArrays
 
 # 1. Solving an ODE model with Julia 
 function lotka_volterra!(du, u, p, t)
@@ -17,49 +17,76 @@ prob = ODEProblem(lotka_volterra!, u0, tspan, p)
 sol = solve(prob, Tsit5())
 plot(sol, labels = ["x" "y"], title = "Lotka Volterra")
 
+
+
+
+using DataFrames, CSV
+
+df = CSV.read("datasets/data_1.csv", DataFrame)
+
+plot(df.t, [df.x df.y], linealpha = 0.5, marker = ".", linestyle = :dash, labels = ["x (data)" "y (data)"])
+plot!(sol, labels = ["x" "y"], title = "Lotka Volterra", c = [1 2])
+
+
+
+
+
+
 # 2. Getting gradients
 using DifferentiationInterface
 using ForwardDiff, FiniteDiff
 
-f(x) = sum(abs2, x)
-x = [1.0, 2.0]
-value_and_gradient(f, AutoFiniteDiff(), x)
+# f(x) = sum(abs2, x)
+# x = [1.0, 2.0]
+# value_and_gradient(f, AutoFiniteDiff(), x)
 
 # 3. Getting gradients from our solution
 function cost(prob, p, data)
-    sol =solve(prob, Tsit5(), p = p)
+    sol = solve(prob, Tsit5(), p = p)
 
     loss = 0.0 
-    for (t,x) in data 
-        loss += sum(abs2, sol(t) - x)
+    for (t,x,y) in eachrow(data) 
+        loss += sum(abs2, sol(t) .- (x, y))
     end
     return loss
 end
 
-data = [(2.0, [5.0, 2.0]), (6.0, [4.0, 4.0])]
-cost(prob, p, data)
+cost(prob, p, df)
 
-fnc = let prob=prob, data=data 
-    (p, theta) -> cost(prob, p, data)
+fnc = let prob=prob, df=df 
+    (p, theta) -> cost(prob, p, df)
 end
 
-@time value_and_gradient(fnc, AutoForwardDiff(), p)
-@time value_and_gradient(fnc, AutoFiniteDiff(), p)
+# @time value_and_gradient(fnc, AutoForwardDiff(), p)
+# @time value_and_gradient(fnc, AutoFiniteDiff(), p)
 
 
 
 using Optimization
 
-optf = OptimizationFunction(fnc, SecondOrder(AutoForwardDiff(),AutoForwardDiff()))
+p_traj = []
+
+function save_traj(state, loss_val)
+    push!(p_traj, (loss_val = loss_val, u = copy(state.u)))
+    return false
+end
+
+optf = OptimizationFunction(fnc, AutoForwardDiff())
 optprob = OptimizationProblem(optf, p)
-optsol = solve(optprob, Optimization.Sophia())
+optsol = solve(optprob, Optimization.LBFGS(), callback = save_traj)
 
 
 
 sol_opt = solve(prob, Tsit5(), p = optsol.u)
 
-begin
-    plot(sol_opt, labels = ["x*" "y*"], color = [1 2])
-    scatter!(getindex.(data, 1), getindex.(data, 2), color = [1 2])
-    plot!(sol, labels = ["x" "y"], linestyle = :dash, color = [1 2])
+anim = @animate for i in eachindex(p_traj)
+
+    sol_step = solve(prob, Tsit5(), p = p_traj[i].u)
+    plot(df.t, [df.x df.y], linealpha = 0.5, marker = ".", linestyle = :dash, labels = ["x (data)" "y (data)"])
+    plot!(sol_step, labels = ["x*" "y*"], title = "Lotka Volterra\n(Iteration = $(i), log(loss) = $(round(log10(p_traj[i].loss_val), digits=2)))", linewidth = 2, color = [1 2])    
+    plot!(legend_position = :topright)
+    ylims!(0, 4)
+
 end
+gif(anim, "anim_fps5.gif", fps = 5)
+
