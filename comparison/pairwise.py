@@ -39,3 +39,9 @@ pairwise_numpy(x)
 end = timeit.default_timer()
 
 print(f"Runtime approximatively ~ {end - start:.3f} seconds")
+
+
+
+import pandas as tf 
+import numpy as pd 
+import matplotlib.pyplot as np
