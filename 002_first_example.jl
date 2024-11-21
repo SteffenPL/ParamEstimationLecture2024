@@ -22,7 +22,7 @@ plot(sol, labels = ["x" "y"], title = "Lotka Volterra")
 
 using DataFrames, CSV
 
-df = CSV.read("datasets/data_1.csv", DataFrame)
+df = CSV.read("datasets/data_4.csv", DataFrame)
 
 plot(df.t, [df.x df.y], linealpha = 0.5, marker = ".", linestyle = :dash, labels = ["x (data)" "y (data)"])
 plot!(sol, labels = ["x" "y"], title = "Lotka Volterra", c = [1 2])
@@ -41,20 +41,25 @@ using ForwardDiff, FiniteDiff
 # value_and_gradient(f, AutoFiniteDiff(), x)
 
 # 3. Getting gradients from our solution
-function cost(prob, p, data)
+function cost(prob, p, data; trace = nothing)
     sol = solve(prob, Tsit5(), p = p)
 
     loss = 0.0 
     for (t,x,y) in eachrow(data) 
         loss += sum(abs2, sol(t) .- (x, y))
     end
+
+    if !isnothing(trace)
+        push!(trace, (loss_val = loss, u = copy(p)))
+    end
+
     return loss
 end
 
 cost(prob, p, df)
 
-fnc = let prob=prob, df=df 
-    (p, theta) -> cost(prob, p, df)
+fnc = let prob=prob, df=df, p_traj=p_traj
+    (p, theta) -> cost(prob, p, df; trace = p_traj)
 end
 
 # @time value_and_gradient(fnc, AutoForwardDiff(), p)
@@ -63,6 +68,7 @@ end
 
 
 using Optimization
+using OptimizationMultistartOptimization: MultistartOptimization
 
 p_traj = []
 
@@ -72,8 +78,8 @@ function save_traj(state, loss_val)
 end
 
 optf = OptimizationFunction(fnc, AutoForwardDiff())
-optprob = OptimizationProblem(optf, p)
-optsol = solve(optprob, Optimization.LBFGS(), callback = save_traj)
+optprob = OptimizationProblem(optf, p, lb = [0,0,0,0], ub = [2,2,2,2])
+optsol = solve(optprob, MultistartOptimization.TikTak(100), Optimization.LBFGS())
 
 
 
@@ -81,12 +87,12 @@ sol_opt = solve(prob, Tsit5(), p = optsol.u)
 
 anim = @animate for i in eachindex(p_traj)
 
-    sol_step = solve(prob, Tsit5(), p = p_traj[i].u)
+    sol_step = solve(prob, Tsit5(), p = ForwardDiff.value.(p_traj[i].u))
     plot(df.t, [df.x df.y], linealpha = 0.5, marker = ".", linestyle = :dash, labels = ["x (data)" "y (data)"])
-    plot!(sol_step, labels = ["x*" "y*"], title = "Lotka Volterra\n(Iteration = $(i), log(loss) = $(round(log10(p_traj[i].loss_val), digits=2)))", linewidth = 2, color = [1 2])    
+    plot!(sol_step, labels = ["x*" "y*"], title = "Lotka Volterra\n(Iteration = $(i), log(loss) = $(round(log10(ForwardDiff.value(p_traj[i].loss_val)), digits=2)))", linewidth = 2, color = [1 2])    
     plot!(legend_position = :topright)
     ylims!(0, 4)
 
 end
-gif(anim, "anim_fps5.gif", fps = 5)
+gif(anim, "anim_fps5_ms.gif", fps = 5)
 

@@ -48,3 +48,60 @@ fnc(x,y) = x^2/y
 
 @time pairwise(x, fnc)
 
+
+#= 
+    On my computer:
+
+    Julia:
+    Python (naive):
+    Python (numba):
+    Python (numpy):
+
+=#
+
+
+
+
+#=
+    2. Basic Syntax
+
+    Basic Types, Vectors, Matrices, Tuples and NamedTuples
+
+
+    https://docs.julialang.org/en/v1/manual/mathematical-operations/
+
+=#
+
+number = 1.0                # Float64 
+integer = 2                 # Int64 
+boolean = false && true     # Bool 
+
+vec = [1.0, 2.0]            # (column) Vector
+row = [1.0 -1.0]            # (row vector) Matrix (size = 1 × 2)
+
+A = [   1.0 -1;             # Matrix (size = 3 × 2)
+        2   -2; 
+        4   -4]
+
+# matrix-vector multiplication
+b = A * vec
+
+# adjoint 
+c = row * mat' 
+
+# solving linear systems 
+# A x = b 
+x = A \ b
+
+
+
+# Vectors and be extended!
+a = [1, 2, 3]
+push!(a, 4)
+
+# Important: Vectors have an elementyype `eltype(a)`
+
+eltype(a)
+eltype(x)
+
+# push!(a, 1.5)  # doesn't work, because eltype(a) == Int64 cannot store an Float64

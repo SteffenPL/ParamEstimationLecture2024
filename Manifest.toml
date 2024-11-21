@@ -2,7 +2,7 @@
 
 julia_version = "1.11.1"
 manifest_format = "2.0"
-project_hash = "3ebac8f02a9faa90c9ef0e9ad4d9b273fd9dea58"
+project_hash = "766539273b1cb270657dfb0daac92fb4bab9cea5"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "30bb95a372787af850addf28ac937f1be7b79173"
@@ -14,6 +14,16 @@ weakdeps = ["ChainRulesCore", "ConstructionBase", "EnzymeCore"]
     ADTypesChainRulesCoreExt = "ChainRulesCore"
     ADTypesConstructionBaseExt = "ConstructionBase"
     ADTypesEnzymeCoreExt = "EnzymeCore"
+
+[[deps.About]]
+deps = ["InteractiveUtils", "JuliaSyntaxHighlighting", "PrecompileTools", "StyledStrings"]
+git-tree-sha1 = "efbf5b623b7ee2a41ce5aed6299aa62ab7f2d5b9"
+uuid = "69d22d85-9f48-4c46-bbbe-7ad8341ff72a"
+version = "1.0.1"
+weakdeps = ["Pkg"]
+
+    [deps.About.extensions]
+    PkgExt = "Pkg"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1068,6 +1078,17 @@ deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "25ee0be4d43d0269027024d75a24c24d6c6e590c"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
 version = "3.0.4+0"
+
+[[deps.JuliaSyntax]]
+git-tree-sha1 = "937da4713526b96ac9a178e2035019d3b78ead4a"
+uuid = "70703baa-626e-46a2-a12c-08ffd08c73b4"
+version = "0.4.10"
+
+[[deps.JuliaSyntaxHighlighting]]
+deps = ["JuliaSyntax", "StyledStrings"]
+git-tree-sha1 = "19ecee1ea81c60156486a92b062e443b6bba60b7"
+uuid = "ac6e5ff7-fb65-4e79-a425-ec3bc9c03011"
+version = "0.1.0"
 
 [[deps.JumpProcesses]]
 deps = ["ArrayInterface", "DataStructures", "DiffEqBase", "DocStringExtensions", "FunctionWrappers", "Graphs", "LinearAlgebra", "Markdown", "PoissonRandom", "Random", "RandomNumbers", "RecursiveArrayTools", "Reexport", "SciMLBase", "Setfield", "StaticArrays", "SymbolicIndexingInterface", "UnPack"]
