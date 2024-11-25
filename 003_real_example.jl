@@ -1,5 +1,6 @@
-using DifferentialEquations, Plots
+using OrdinaryDiffEq, Plots
 using LinearAlgebra, StaticArrays
+using Optimization
 
 datat = [4.0,15,30,45]
 
@@ -20,6 +21,8 @@ datau_rel = [
     5.700368097	7.791209283	22.39791534	28.32074265;
     1.72086584	1.085077092	18.70788931	30.28622005
 ]
+
+data_labels = ["I" "R" "F" "Ft" "D" "T+Tt"]
 
 data = (;datat, datau, datau_rel)
 
@@ -63,7 +66,7 @@ p = (
 )
 
 odeprob = ODEProblem(ode_sa!, u0, tspan, p)
-odesol = solve(odeprob, Tsit5())
+odesol = solve(odeprob, AutoTsit5(Rosenbrock23()))
 
 labels = ["I" "R" "F" "Ft" "D" "T" "Tt" "B"]
 plot(odesol; labels, yscale = :log10, ylims = (1e-1, 1e2))
@@ -72,36 +75,52 @@ plot(odesol; labels, yscale = :log10, ylims = (1e-1, 1e2))
 function loss(prob, p, data)
     (ts, us, us_rel) = data 
 
-    sol = solve(odeprob, Tsit5(), p = p)
+    sol = solve(odeprob, AutoTsit5(Rosenbrock23()), p = p)
 
-    # fit percentages 
     y = 0.0 
+    u0 = prob.u0
     for k in eachindex(ts)
         t = ts[k]
-        datak_rel = us_rel[k]
-
         uk = sol(t)
+      
+        # fit percentages 
+        datak_rel = us_rel[k]
         uk_rel = u2data_rel(uk)
+        
         y += sum(abs2, uk_rel .- datak_rel)
+
+        # absolute value 
+        y += abs2(uk[1] - u0[1])
     end
+
     return y
 end
 
 loss(prob, p, data)
 
-optp_names = (:BAFF, :CXCL9)
+
+optp_names = (:G_I, :G_R, :G_F, :G_Ft, :G_D, :G_T, :G_Tt, :G_B, :D_I, :D_R, :D_F, :D_Ft, :D_D, :D_T, :D_Tt, :D_B, :TNFalpha, :TGFB2, :IFNgamma, :CXCL9, :BAFF, :IL21, :R2F, :R2Ft, :F2Ft, :Ft2D, :T2Tt, :Tt2T, :GC_rate)
+
+optp_names = (:G_I, :G_R, :G_F, :G_Ft, :G_D, :G_T, :G_Tt, :G_B, :D_I, :D_R, :D_F, :D_Ft, :D_D, :D_T, :D_Tt, :D_B, :TNFalpha, :TGFB2, :IFNgamma, :CXCL9, :BAFF, :IL21, :R2F, :R2Ft, :F2Ft, :Ft2D, :T2Tt, :Tt2T, :GC_rate)
 opt2ode(opt_p, optp_names) = (;p..., NamedTuple{optp_names}(opt_p)...)
 
 opt_fnc = let odeprob=odeprob, data=data, p=p, optp_names=optp_names
     (optp, theta) -> loss(odeprob, opt2ode(optp, optp_names), data)
 end
 
-optp = [p.BAFF, p.CXCL9]
+optp = [p[optp_names]...]
 optf = OptimizationFunction(opt_fnc, AutoForwardDiff())
 optprob = OptimizationProblem(optf, optp)
 
 optsol = solve(optprob, Optimization.LBFGS())
 
-optodesol = solve(odeprob, Tsit5(), p = opt2ode(optsol.u))
+optodesol = solve(odeprob, Tsit5(), p = opt2ode(optsol.u, optp_names))
 
-plot(optodesol; labels, yscale = :log10, ylims = (1e-1, 1e2))
+plot(optodesol; labels, yscale = :log10, ylims = (1e-0, 1e3), legend_position = :outertopright)
+plot!(datat, datau_rel', linealpha = 0.5, linestyle = :dash, m = ".", labels = data_labels)
+
+
+plot(df.t, [df.x df.y], linealpha = 0.5, marker = ".", linestyle = :dash, labels = ["x (data)" "y (data)"])
+plot!(sol_step, labels = ["x*" "y*"], title = "Lotka Volterra\n(Iteration = $(i), log(loss) = $(round(log10(ForwardDiff.value(p_traj[i].loss_val)), digits=2)))", linewidth = 2, color = [1 2])    
+plot!(legend_position = :topright)
+ylims!(0, 4)

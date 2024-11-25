@@ -16,8 +16,10 @@ def pairwise_njit(x):
 
 
 def pairwise_numpy(x, fnc):
-    mask = 
-    return fnc(x[:, None], x[None, :]).sum()
+    i_index = np.arange(len(x))[:,None]
+    j_index = np.arange(len(x))[None,:]
+    mask = j_index < i_index
+    return fnc(x[:, None], x[None, :])[mask].sum()
     
 x = np.random.rand(10_000)
 fnc = lambda x, y: x**2/y
@@ -28,14 +30,18 @@ start = timeit.default_timer()
 pairwise_naive(x, fnc)
 end = timeit.default_timer()
 
+print(f"Runtime approximatively ~ {end - start:.8f} seconds")
+
 
 start = timeit.default_timer()
 pairwise_njit(x)
 end = timeit.default_timer()
 
+print(f"Runtime approximatively ~ {end - start:.8f} seconds")
+
 
 start = timeit.default_timer()
-pairwise_numpy(x)
+pairwise_numpy(x, fnc)
 end = timeit.default_timer()
 
-print(f"Runtime approximatively ~ {end - start:.3f} seconds")
+print(f"Runtime approximatively ~ {end - start:.8f} seconds")
