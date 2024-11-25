@@ -1,4 +1,6 @@
 using OrdinaryDiffEq, Plots, StaticArrays
+using Optimization
+
 
 # 1. Solving an ODE model with Julia 
 function lotka_volterra!(du, u, p, t)
@@ -41,6 +43,8 @@ using ForwardDiff, FiniteDiff
 # value_and_gradient(f, AutoFiniteDiff(), x)
 
 # 3. Getting gradients from our solution
+
+p_traj = []
 function cost(prob, p, data; trace = nothing)
     sol = solve(prob, Tsit5(), p = p)
 
@@ -67,19 +71,14 @@ end
 
 
 
-using Optimization
-using OptimizationMultistartOptimization: MultistartOptimization
-
-p_traj = []
-
 function save_traj(state, loss_val)
     push!(p_traj, (loss_val = loss_val, u = copy(state.u)))
     return false
 end
 
 optf = OptimizationFunction(fnc, AutoForwardDiff())
-optprob = OptimizationProblem(optf, p, lb = [0,0,0,0], ub = [2,2,2,2])
-optsol = solve(optprob, MultistartOptimization.TikTak(100), Optimization.LBFGS())
+optprob = OptimizationProblem(optf, p)
+optsol = solve(optprob, Optimization.LBFGS())
 
 
 
@@ -88,7 +87,7 @@ sol_opt = solve(prob, Tsit5(), p = optsol.u)
 anim = @animate for i in eachindex(p_traj)
 
     sol_step = solve(prob, Tsit5(), p = ForwardDiff.value.(p_traj[i].u))
-    plot(df.t, [df.x df.y], linealpha = 0.5, marker = ".", linestyle = :dash, labels = ["x (data)" "y (data)"])
+    plot(df.t, [df.x df.y], linealpha = 0.5, marker = :circle, linestyle = :dash, labels = ["x (data)" "y (data)"])
     plot!(sol_step, labels = ["x*" "y*"], title = "Lotka Volterra\n(Iteration = $(i), log(loss) = $(round(log10(ForwardDiff.value(p_traj[i].loss_val)), digits=2)))", linewidth = 2, color = [1 2])    
     plot!(legend_position = :topright)
     ylims!(0, 4)
